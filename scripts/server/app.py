@@ -18,6 +18,7 @@ from server.modules.screener import ROUTER as SCREENER_ROUTER
 from server.modules.screener_strategy_catalog import ROUTER as SCREENER_STRATEGY_CATALOG_ROUTER
 from server.modules.skill_library import ROUTER as SKILL_LIBRARY_ROUTER
 from server.modules.sync_runtime import ROUTER as SYNC_ROUTER
+from server.modules.mx_datasource import ROUTER as MX_DATASOURCE_ROUTER
 from server.modules.watchlist import ROUTER as WATCHLIST_ROUTER
 from server.shared.api import RequestContextMiddleware, register_exception_handlers
 from server.shared import runtime
@@ -52,3 +53,4 @@ APP.include_router(AUTH_ROUTER)
 APP.include_router(WATCHLIST_ROUTER)
 APP.include_router(SCREENER_STRATEGY_CATALOG_ROUTER)
 APP.include_router(SCREENER_ROUTER)
+APP.include_router(MX_DATASOURCE_ROUTER)
