@@ -16,7 +16,7 @@ from server.shared import runtime
 
 ROUTER = APIRouter(tags=["github"])
 GITHUB_API_BASE = "https://api.github.com"
-REPO_FULL_NAME = os.environ.get("GITHUB_REPO_FULL_NAME", "rancy777/quantdash-ai-stock").strip()
+REPO_FULL_NAME = os.environ.get("GITHUB_REPO_FULL_NAME", "kelink/quantdash-ai-stock").strip()
 REPO_URL = f"https://github.com/{REPO_FULL_NAME}"
 PACKAGE_JSON_PATH = runtime.ROOT_DIR / "package.json"
 STATUS_PATH = runtime.SYSTEM_DIR / "github_update_status.json"

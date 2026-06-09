@@ -15,7 +15,7 @@ export interface Stock {
   marketCap?: number;// Market Cap (in Billion usually)
 }
 
-export type DataFreshnessSource = 'local' | 'live' | 'cache' | 'snapshot' | 'secondary' | 'mock' | 'unknown';
+export type DataFreshnessSource = 'local' | 'live' | 'cache' | 'snapshot' | 'secondary' | 'mx' | 'mock' | 'unknown';
 
 export interface DataFreshnessMeta {
   source: DataFreshnessSource;

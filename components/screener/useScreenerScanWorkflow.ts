@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { getChiNextList, getFullMarketStockList, getStockList, checkStrategyPattern } from '../../services/quotesService';
 import { runPywencaiScreener } from '../../services/screenerService';
+import { queryMxScreener } from '../../services/mxQueryService';
+import { useMxGlobalMode } from '../../services/useMxGlobalMode';
 import { ScreenerStrategyOption } from './config';
 import { Stock } from '../../types';
 
@@ -11,6 +13,7 @@ type ScanProgressState = {
 };
 
 export default function useScreenerScanWorkflow() {
+  const { isMxPrimary } = useMxGlobalMode();
   const [activeStrategy, setActiveStrategy] = useState<string>('pywencai');
   const [stockQuery, setStockQuery] = useState('');
   const [hiddenStrategyCards, setHiddenStrategyCards] = useState<Record<string, boolean>>({});
@@ -42,8 +45,29 @@ export default function useScreenerScanWorkflow() {
       const question = stockQuery.trim();
       if (!question) {
         setScanStatus('请输入一句话选股条件');
-        setScanError('pywencai 需要一句完整条件，例如“近20日涨停过且今日成交额大于5亿的非ST股票”');
+        setScanError('pywencai 需要一句完整条件，例如”近20日涨停过且今日成交额大于5亿的非ST股票”');
         setIsScanning(false);
+        return;
+      }
+
+      // mx 数据源优先 → 使用 mx-stocks-screener
+      if (isMxPrimary) {
+        setScanStatus('正在通过妙想 mx 选股...');
+        try {
+          const mxResults = await queryMxScreener(question);
+          setResults(mxResults);
+          setScanStatus(
+            mxResults.length > 0
+              ? `妙想 mx 返回 ${mxResults.length} 只标的`
+              : '妙想 mx 未返回符合条件的标的',
+          );
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'mx 选股失败';
+          setScanStatus(message);
+          setScanError(message);
+        } finally {
+          setIsScanning(false);
+        }
         return;
       }
 

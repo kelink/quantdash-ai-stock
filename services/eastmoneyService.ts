@@ -73,6 +73,7 @@ const sourceLabelMap: Record<DataFreshnessMeta['source'], string> = {
   live: '实时采集',
   local: '本地文件',
   mock: '模拟回退',
+  mx: '妙想 mx',
   secondary: '第二数据源',
   snapshot: '最近快照',
   unknown: '未知',
@@ -116,7 +117,8 @@ export const mergeDataFreshnessMeta = (
   if (valid.length === 0) return fallback;
 
   const priority: Record<DataFreshnessMeta['source'], number> = {
-    live: 5,
+    live: 6,
+    mx: 5,
     cache: 4,
     secondary: 4,
     snapshot: 3,

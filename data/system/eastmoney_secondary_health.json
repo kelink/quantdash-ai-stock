@@ -1,0 +1,18 @@
+{
+  "available": false,
+  "configuredProvider": "mootdx",
+  "lastCheckedAt": "2026-06-09T11:09:15.397703",
+  "lastError": "未安装 mootdx",
+  "lastLatencyMs": null,
+  "lastSuccessAt": null,
+  "probeResults": {},
+  "provider": "mootdx",
+  "supportedDatasets": [
+    "stock_kline",
+    "index_kline",
+    "major_indexes",
+    "stock_quote_list",
+    "market_breadth",
+    "index_series"
+  ]
+}

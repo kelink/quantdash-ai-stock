@@ -17,8 +17,8 @@ const EMPTY_STATUS: GithubUpdateStatus = {
   hasUpdate: false,
   latestCommit: null,
   latestRelease: null,
-  repoFullName: 'rancy777/quantdash-ai-stock',
-  repoUrl: 'https://github.com/rancy777/quantdash-ai-stock',
+  repoFullName: 'kelink/quantdash-ai-stock',
+  repoUrl: 'https://github.com/kelink/quantdash-ai-stock',
   source: 'none',
 };
 

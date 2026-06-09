@@ -5,6 +5,8 @@ import Badge from './ui/Badge';
 import DataFreshnessBadge from './ui/DataFreshnessBadge';
 import { getStockList } from '../services/quotesService';
 import { getStockListDataFreshness } from '../services/quotes/stockLists';
+import { queryMxStockList } from '../services/mxQueryService';
+import { useMxGlobalMode } from '../services/useMxGlobalMode';
 import { DataFreshnessMeta, Stock } from '../types';
 import { Search, TrendingUp, TrendingDown, Layers, Activity, Loader2 } from 'lucide-react';
 import { StockDetailRequest } from '../services/stockNavigationService';
@@ -25,6 +27,7 @@ const StockInfoSection: React.FC<StockInfoSectionProps> = ({
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [loading, setLoading] = useState(true);
   const [dataFreshness, setDataFreshness] = useState<DataFreshnessMeta | null>(null);
+  const { isMxPrimary } = useMxGlobalMode();
 
   // Hover Card State
   const [hoveredStock, setHoveredStock] = useState<Stock | null>(null);
@@ -39,15 +42,34 @@ const StockInfoSection: React.FC<StockInfoSectionProps> = ({
     const fetchData = async () => {
       setLoading(true);
       const data = await getStockList();
+
+      // mx 主数据源时追加 mx 数据
+      if (isMxPrimary) {
+        try {
+          const mxStocks = await queryMxStockList();
+          if (mxStocks.length > 0) {
+            // mx 数据优先，合并到现有数据前
+            const existingSymbols = new Set(data.map((s) => s.symbol));
+            const newMxStocks = mxStocks.filter((s) => !existingSymbols.has(s.symbol));
+            const merged = [...mxStocks.slice(0, 10), ...data, ...newMxStocks].slice(0, 100);
+            setStocks(merged);
+            setDataFreshness({ source: 'mx', updatedAt: new Date().toISOString(), detail: '妙想 mx + EastMoney 混合' });
+            if (merged.length > 0) setSelectedStock(merged[0]);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.warn('mx stock list query failed, falling back to EastMoney', e);
+        }
+      }
+
       setStocks(data);
       setDataFreshness(getStockListDataFreshness());
-      if (data.length > 0) {
-        setSelectedStock(data[0]);
-      }
+      if (data.length > 0) setSelectedStock(data[0]);
       setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [isMxPrimary]);
 
   const filteredStocks = stocks.filter(s => 
     s.name.includes(searchTerm) || s.symbol.includes(searchTerm)

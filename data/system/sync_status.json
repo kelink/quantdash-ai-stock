@@ -1,9 +1,9 @@
 {
   "trigger": "startup-sync",
-  "startedAt": "2026-06-09T09:59:41.202Z",
-  "finishedAt": "2026-06-09T10:00:40.301Z",
-  "durationMs": 59099,
-  "updatedAt": "2026-06-09T10:00:40.301Z",
+  "startedAt": "2026-06-09T11:13:33.160Z",
+  "finishedAt": "2026-06-09T11:15:32.603Z",
+  "durationMs": 119443,
+  "updatedAt": "2026-06-09T11:15:32.603Z",
   "overallStatus": "failed",
   "counts": {
     "completed": 0,
@@ -27,8 +27,8 @@
       "name": "Market Core Snapshot",
       "status": "skipped",
       "reason": "already up-to-date (2026-06-09)",
-      "startedAt": "2026-06-09T09:59:41.659Z",
-      "finishedAt": "2026-06-09T09:59:41.659Z",
+      "startedAt": "2026-06-09T11:13:33.342Z",
+      "finishedAt": "2026-06-09T11:13:33.342Z",
       "durationMs": 0
     },
     {
@@ -36,9 +36,9 @@
       "name": "Emotion Indicators",
       "status": "failed",
       "reason": "spawn py ENOENT",
-      "startedAt": "2026-06-09T09:59:41.659Z",
-      "finishedAt": "2026-06-09T10:00:40.300Z",
-      "durationMs": 58641
+      "startedAt": "2026-06-09T11:13:33.342Z",
+      "finishedAt": "2026-06-09T11:15:32.602Z",
+      "durationMs": 119260
     }
   ],
   "extra": {

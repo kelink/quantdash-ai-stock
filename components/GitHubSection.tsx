@@ -6,9 +6,9 @@ import { checkGithubUpdates, getEmptyGithubUpdateStatus, loadGithubUpdateStatus 
 import GlassCard from './ui/GlassCard';
 
 const GITHUB_PROFILE = {
-  href: 'https://github.com/rancy777',
+  href: 'https://github.com/kelink',
   name: 'Rancy GitHub',
-  handle: '@rancy777',
+  handle: '@kelink',
   description: '我的 GitHub 主页，集中展示项目代码、版本迭代和个人开源内容。',
   highlights: ['项目代码托管', '版本记录与迭代', '个人主页 / 开源作品'],
 };
