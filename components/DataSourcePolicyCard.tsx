@@ -82,6 +82,20 @@ const DataSourcePolicyCard: React.FC<DataSourcePolicyCardProps> = ({ isDark }) =
   const [mxProbing, setMxProbing] = useState(false);
   const [globalMode3S, setGlobalMode3S] = useState<DataSourceGlobalMode>('prefer_eastmoney');
 
+  // 独立加载 mx 数据源健康状态（不依赖登录态）
+  useEffect(() => {
+    let cancelled = false;
+    loadMxHealth()
+      .then((h) => {
+        if (cancelled) return;
+        setMxHealth(h);
+      })
+      .catch(() => {
+        // mx 数据源不可用时静默处理
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -95,16 +109,6 @@ const DataSourcePolicyCard: React.FC<DataSourcePolicyCardProps> = ({ isDark }) =
         setHealth(nextStatus.secondaryHealth);
         setGlobalMode(nextStatus.providerPolicy.globalMode);
         setDatasetOverrides(nextStatus.providerPolicy.datasetOverrides);
-
-        // 同时加载 mx 数据源健康状态
-        loadMxHealth()
-          .then((h) => {
-            if (cancelled) return;
-            setMxHealth(h);
-          })
-          .catch(() => {
-            // mx 数据源不可用时静默处理
-          });
       } catch (loadError) {
         if (cancelled) return;
         setError(loadError instanceof Error ? loadError.message : '读取数据源策略失败');
