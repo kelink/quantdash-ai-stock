@@ -51,11 +51,11 @@ def _build_script_args(skill_type: str, query: str, indicators: str = "") -> lis
         raise FileNotFoundError(f"mx-skill 脚本不存在: {script_path}")
 
     args = ["python3", str(script_path), "--query", query]
-    if indicators:
+    if indicators and skill_type != "screener":
         args.extend(["--indicators", indicators])
 
     if skill_type == "screener":
-        args.extend(["--select-type", "all"])
+        args.extend(["--select-type", "A股"])
 
     return args
 
