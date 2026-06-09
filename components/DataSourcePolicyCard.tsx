@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, Database, Loader2, Save, Stethoscope } from 'lucide-react';
 import type {
+  DataSourceGlobalMode,
   DataSourcePolicyMode,
   DataSourcePolicyState,
+  MxHealthState,
+  MxProbeResult,
   SecondaryHealthProbeResult,
   SecondaryHealthState,
 } from '../types';
@@ -11,10 +14,29 @@ import {
   probeDataSourceHealth,
   updateDataSourcePolicy,
 } from '../services/dataSourcePolicyService';
+import { loadMxHealth, probeMxHealth } from '../services/mxDataSourceService';
 
 interface DataSourcePolicyCardProps {
   isDark: boolean;
 }
+
+const GLOBAL_MODE_OPTIONS: Array<{ value: DataSourceGlobalMode; label: string; description: string }> = [
+  {
+    value: 'prefer_mx',
+    label: '妙想 mx（主）',
+    description: '优先走妙想 mx-skills 数据源。不可用时自动回落至 EastMoney 和 mootdx。',
+  },
+  {
+    value: 'prefer_eastmoney',
+    label: 'EastMoney（主）',
+    description: '默认只走 EastMoney，mx 和 mootdx 仅保留状态和手动切换能力。',
+  },
+  {
+    value: 'prefer_secondary',
+    label: 'mootdx（主）',
+    description: '支持的数据集优先走 mootdx，EastMoney 和 mx 作为兜底。',
+  },
+];
 
 const MODE_OPTIONS: Array<{ value: DataSourcePolicyMode; label: string; description: string }> = [
   {
@@ -56,6 +78,9 @@ const DataSourcePolicyCard: React.FC<DataSourcePolicyCardProps> = ({ isDark }) =
   const [probing, setProbing] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mxHealth, setMxHealth] = useState<MxHealthState | null>(null);
+  const [mxProbing, setMxProbing] = useState(false);
+  const [globalMode3S, setGlobalMode3S] = useState<DataSourceGlobalMode>('prefer_eastmoney');
 
   useEffect(() => {
     let cancelled = false;
@@ -70,6 +95,16 @@ const DataSourcePolicyCard: React.FC<DataSourcePolicyCardProps> = ({ isDark }) =
         setHealth(nextStatus.secondaryHealth);
         setGlobalMode(nextStatus.providerPolicy.globalMode);
         setDatasetOverrides(nextStatus.providerPolicy.datasetOverrides);
+
+        // 同时加载 mx 数据源健康状态
+        loadMxHealth()
+          .then((h) => {
+            if (cancelled) return;
+            setMxHealth(h);
+          })
+          .catch(() => {
+            // mx 数据源不可用时静默处理
+          });
       } catch (loadError) {
         if (cancelled) return;
         setError(loadError instanceof Error ? loadError.message : '读取数据源策略失败');
@@ -132,33 +167,185 @@ const DataSourcePolicyCard: React.FC<DataSourcePolicyCardProps> = ({ isDark }) =
     }
   };
 
+  const handleMxProbe = async () => {
+    try {
+      setMxProbing(true);
+      setError(null);
+      const nextHealth = await probeMxHealth();
+      setMxHealth(nextHealth);
+    } catch (probeError) {
+      setError(probeError instanceof Error ? probeError.message : 'mx 数据源探测失败');
+    } finally {
+      setMxProbing(false);
+    }
+  };
+
   const isBusy = loading || saving || probing;
 
   return (
-    <div
-      className={`mb-4 rounded-xl border p-4 transition-colors ${
-        isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white/80'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-gray-500">
-            Data Source
-          </p>
-          <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
-            <Database size={15} className="text-cyan-500" />
-            <span>第二数据源策略</span>
+    <>
+      {/* mxDataSource 妙想数据源状态 */}
+      <div
+        className={`mb-4 rounded-xl border p-4 transition-colors ${
+          isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white/80'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-gray-500">
+              Data Source
+            </p>
+            <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
+              <Database size={15} className="text-purple-500" />
+              <span>妙想 mx 数据源</span>
+            </div>
+          </div>
+          {mxProbing && <Loader2 size={15} className="shrink-0 animate-spin text-purple-500" />}
+        </div>
+
+        <div className="mt-4 space-y-2 text-xs">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-slate-500 dark:text-gray-500">状态</span>
+            <span
+              className={`font-medium ${
+                mxHealth?.available
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-amber-600 dark:text-amber-400'
+              }`}
+            >
+              {mxHealth?.available ? '可用' : '未就绪'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-slate-500 dark:text-gray-500">已安装 Skills</span>
+            <span className="font-medium text-slate-700 dark:text-gray-200">
+              {mxHealth?.installedSkills.length ?? 0}
+            </span>
           </div>
         </div>
-        {isBusy && <Loader2 size={15} className="shrink-0 animate-spin text-cyan-500" />}
+
+        {!mxHealth?.available && (
+          <p className="mt-2 text-xs leading-5 text-amber-600 dark:text-amber-400">
+            当前环境未检测到 mx-skills。请确认 mxDataSource/mx-skills/ 目录存在，且 EM_API_KEY 已配置。
+          </p>
+        )}
+
+        {/* 全局三源策略切换 */}
+        <div className={`mt-4 rounded-lg px-3 py-3 ${isDark ? 'bg-black/20' : 'bg-slate-50'}`}>
+          <label
+            htmlFor="data-source-global-mode-3s"
+            className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-gray-500"
+          >
+            全局主数据源
+          </label>
+          <select
+            id="data-source-global-mode-3s"
+            value={globalMode3S}
+            onChange={(event) => setGlobalMode3S(event.target.value as DataSourceGlobalMode)}
+            className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+              isDark
+                ? 'border-white/10 bg-slate-900/80 text-gray-100 focus:border-purple-500/60'
+                : 'border-slate-200 bg-white text-slate-800 focus:border-purple-400'
+            }`}
+          >
+            {GLOBAL_MODE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-gray-300">
+            {GLOBAL_MODE_OPTIONS.find((o) => o.value === globalMode3S)?.description}
+          </p>
+        </div>
+
+        {/* mx 探测 */}
+        <div className={`mt-4 rounded-lg border px-3 py-3 ${isDark ? 'border-white/10 bg-black/20' : 'border-slate-200 bg-slate-50'}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-gray-500">
+              <Stethoscope size={13} />
+              <span>mx Skills 探测</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleMxProbe}
+              disabled={mxProbing}
+              className={`rounded-md px-2 py-1 text-[11px] font-semibold transition-colors ${
+                mxProbing
+                  ? 'cursor-not-allowed bg-slate-200 text-slate-400 dark:bg-white/10 dark:text-gray-500'
+                  : isDark
+                    ? 'bg-purple-500/10 text-purple-300 hover:bg-purple-500/15'
+                    : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+              }`}
+            >
+              {mxProbing ? '探测中...' : '运行探测'}
+            </button>
+          </div>
+
+          <div className="mt-3 space-y-2 text-xs text-slate-700 dark:text-gray-200">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-500 dark:text-gray-500">最近探测</span>
+              <span>{mxHealth?.lastCheckedAt ?? '未记录'}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-500 dark:text-gray-500">最近错误</span>
+              <span>{mxHealth?.lastError ?? '无'}</span>
+            </div>
+          </div>
+
+          {mxHealth?.probeResults && Object.keys(mxHealth.probeResults).length > 0 && (
+            <div className="mt-3 space-y-2">
+              {Object.entries(mxHealth.probeResults).map(([slug, result]: [string, MxProbeResult]) => (
+                <div
+                  key={slug}
+                  className={`flex items-center justify-between gap-3 rounded-md px-2 py-2 text-[11px] ${
+                    isDark ? 'bg-white/5 text-gray-300' : 'bg-white text-slate-600'
+                  }`}
+                >
+                  <div>
+                    <div className="font-semibold text-slate-700 dark:text-gray-100">{slug}</div>
+                    <div className="mt-1 text-slate-500 dark:text-gray-400">{result.detail}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={result.ok ? 'text-emerald-500' : 'text-amber-500'}>
+                      {result.ok ? '通过' : '失败'}
+                    </div>
+                    <div className="mt-1 text-slate-500 dark:text-gray-400">
+                      {result.latencyMs ? `${result.latencyMs} ms` : '未测速'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="mt-4 space-y-2 text-xs">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-500 dark:text-gray-500">第二源</span>
-          <span className={`font-medium ${availabilityTone}`}>
-            {policy?.secondaryAvailable ? 'mootdx 可用' : 'mootdx 未就绪'}
-          </span>
+      {/* 第二数据源策略 */}
+      <div
+        className={`mb-4 rounded-xl border p-4 transition-colors ${
+          isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white/80'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-gray-500">
+              Data Source
+            </p>
+            <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
+              <Database size={15} className="text-cyan-500" />
+              <span>第二数据源策略</span>
+            </div>
+          </div>
+          {isBusy && <Loader2 size={15} className="shrink-0 animate-spin text-cyan-500" />}
+        </div>
+
+        <div className="mt-4 space-y-2 text-xs">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-slate-500 dark:text-gray-500">第二源</span>
+            <span className={`font-medium ${availabilityTone}`}>
+              {policy?.secondaryAvailable ? 'mootdx 可用' : 'mootdx 未就绪'}
+            </span>
         </div>
         <div className="flex items-center justify-between gap-3">
           <span className="text-slate-500 dark:text-gray-500">全局策略</span>
@@ -362,6 +549,7 @@ const DataSourcePolicyCard: React.FC<DataSourcePolicyCardProps> = ({ isDark }) =
         <span>{saving ? '正在保存...' : isDirty ? '保存策略' : '策略已同步'}</span>
       </button>
     </div>
+    </>
   );
 };
 
