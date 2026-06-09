@@ -202,21 +202,25 @@ function App() {
             <DataSourcePolicyCard isDark={isDark} />
           </div>
 
+          {/* 同步状态 — DataSource 下方可见 */}
+          <div className={`px-3 pt-3 ${isDark ? '' : ''}`}>
+            <SyncStatusCard
+              isDark={isDark}
+              status={syncStatus}
+              runtimeStatus={runtimeStatus}
+              loading={syncStatusLoading}
+              onRefresh={async () => {
+                const [nextStatus, nextRuntime] = await Promise.all([
+                  loadSyncStatus(),
+                  fetchSyncRuntimeStatus(),
+                ]);
+                setSyncStatus(nextStatus);
+                setRuntimeStatus(nextRuntime);
+              }}
+            />
+          </div>
+
           <div className={`mt-auto p-6 border-t ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
-             <SyncStatusCard
-               isDark={isDark}
-               status={syncStatus}
-               runtimeStatus={runtimeStatus}
-               loading={syncStatusLoading}
-               onRefresh={async () => {
-                 const [nextStatus, nextRuntime] = await Promise.all([
-                   loadSyncStatus(),
-                   fetchSyncRuntimeStatus(),
-                 ]);
-                 setSyncStatus(nextStatus);
-                 setRuntimeStatus(nextRuntime);
-               }}
-             />
              <div className={`p-4 rounded-xl border ${isDark ? 'bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-white/5' : 'bg-gradient-to-br from-indigo-50 to-blue-50 border-blue-100'}`}>
                 <h4 className={`text-sm font-bold mb-1 ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Pro 版本</h4>
                 <p className="text-xs text-slate-500 dark:text-gray-500 mb-3">解锁 AI 深度投研功能</p>

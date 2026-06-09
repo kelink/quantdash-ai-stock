@@ -23,6 +23,26 @@ class MxPolicyPayload(_StrictModel):
     globalMode: str
 
 
+class MxQueryPayload(_StrictModel):
+    skillType: str
+    query: str
+    indicators: str = ""
+
+
+@ROUTER.post("/query")
+async def mx_query(payload: MxQueryPayload):
+    """通过 mx-skill 查询数据。"""
+    from server.modules.mx_datasource.mx_provider import query_mx_skill
+    from server.shared.runtime import run_blocking
+
+    return await run_blocking(
+        query_mx_skill,
+        payload.skillType,
+        payload.query,
+        payload.indicators,
+    )
+
+
 @ROUTER.get("/health")
 async def mx_health():
     """返回 mx 数据源健康状态。"""
