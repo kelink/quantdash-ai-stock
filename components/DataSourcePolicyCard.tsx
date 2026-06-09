@@ -15,6 +15,7 @@ import {
   updateDataSourcePolicy,
 } from '../services/dataSourcePolicyService';
 import { loadMxHealth, loadMxPolicy, probeMxHealth, saveMxPolicy } from '../services/mxDataSourceService';
+import { notifyMxModeChanged } from '../services/useMxGlobalMode';
 
 interface DataSourcePolicyCardProps {
   isDark: boolean;
@@ -96,7 +97,9 @@ const DataSourcePolicyCard: React.FC<DataSourcePolicyCardProps> = ({ isDark }) =
 
   const handleGlobalModeChange = (mode: DataSourceGlobalMode) => {
     setGlobalMode3S(mode);
-    saveMxPolicy(mode).catch(() => {});
+    saveMxPolicy(mode)
+      .then(() => notifyMxModeChanged())
+      .catch(() => {});
   };
 
   const handleSave = async () => {

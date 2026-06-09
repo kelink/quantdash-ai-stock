@@ -36,49 +36,64 @@ export const queryMxData = async (
   return response.json();
 };
 
-/** 从 mx-finance-data 查询股票列表并转换为 Stock[] 格式 */
+/** 从 mx-finance-data 查询指定股票列表并转换为 Stock[] 格式 */
 export const queryMxStockList = async (): Promise<Stock[]> => {
-  const result = await queryMxData('finance', 'A股涨幅榜前50', '最新价,涨跌幅,市盈率,总市值,行业');
+  // 查询主要指数 + 热门股票
+  const query = '上证指数 深证成指 创业板指 贵州茅台 宁德时代 比亚迪 招商银行 中国平安 中芯国际 东方财富 五粮液 隆基绿能 美的集团 恒瑞医药 中信证券';
+  const result = await queryMxData('finance', query, '最新价,涨跌幅,市盈率,总市值,成交量,成交额,行业');
   const stocks: Stock[] = [];
 
   for (const sheet of result.rows) {
     if (!sheet?.rows) continue;
     for (const row of sheet.rows) {
-      // mx 数据行的 key 格式: "股票名(代码.MARKET)" 或中文列名
       const keys = Object.keys(row);
       if (keys.length < 2) continue;
 
-      // 尝试从 keys 中提取股票信息
-      const dateKey = keys.find((k) => k.match(/^\d{4}-\d{2}-\d{2}/));
-      const entityKey = keys.find((k) => k.includes('(') && k.includes(')'));
-
+      // 找到实体 key（格式: "股票名(代码.MARKET)"）
+      const entityKey = keys.find((k) => k.includes('(') && k.includes(')') && !k.match(/^\d{4}-\d{2}/));
       if (!entityKey) continue;
       const match = entityKey.match(/^(.+)\((\d+)\.(SH|SZ|BJ)\)$/);
       if (!match) continue;
 
       const name = match[1];
       const code = match[2];
-      const market = match[3];
 
-      // 从 row 值中提取字段
-      const values = dateKey ? (row[dateKey] ?? '') : '';
-      const allValues: Record<string, string> = {};
-      for (const k of keys) {
-        if (k !== entityKey) allValues[k] = String(row[k] ?? '');
+      // 找数值列 key
+      const valueKeys = keys.filter((k) => k !== entityKey);
+      const values: Record<string, string> = {};
+      for (const vk of valueKeys) {
+        values[vk] = String(row[vk] ?? '');
       }
 
-      // 构建 Stock 对象
+      // 从 row 中提取字段
+      const getVal = (...names: string[]) => {
+        for (const n of names) {
+          for (const [k, v] of Object.entries(values)) {
+            if (k.includes(n)) return String(v);
+          }
+        }
+        return '';
+      };
+
+      const priceStr = getVal('最新价', '现价', '收盘价');
+      const pctStr = getVal('涨跌幅');
+      const peStr = getVal('市盈率');
+      const mcapStr = getVal('总市值');
+      const volStr = getVal('成交量');
+      const amtStr = getVal('成交额');
+      const indStr = getVal('行业');
+
       const stock: Stock = {
-        symbol: `${market === 'SH' ? '6' : market === 'SZ' ? '0' : '8'}${code}`.slice(0, 6),
+        symbol: code.padStart(6, '0'),
         name,
-        price: parseFloat(String(row['最新价'] ?? row['现价'] ?? 0)) || 0,
-        pctChange: parseFloat(String(row['涨跌幅'] ?? '0').replace('%', '')) || 0,
-        volume: String(row['成交量'] ?? '-'),
-        turnover: String(row['成交额'] ?? '-'),
-        industry: String(row['行业'] ?? ''),
-        concepts: [String(row['行业'] ?? '')],
-        pe: parseFloat(String(row['市盈率'] ?? 0)) || undefined,
-        marketCap: parseFloat(String(row['总市值'] ?? '0').replace(/[万亿]/g, '')) || undefined,
+        price: parseFloat(priceStr.replace(/[^\d.]/g, '')) || 0,
+        pctChange: parseFloat(pctStr.replace(/[%％]/g, '')) || 0,
+        volume: volStr || '-',
+        turnover: amtStr || '-',
+        industry: indStr || '',
+        concepts: [indStr || ''],
+        pe: parseFloat(peStr.replace(/[^\d.]/g, '')) || undefined,
+        marketCap: parseFloat(mcapStr.replace(/[万亿]/g, '')) || undefined,
       };
 
       if (stock.name && stock.price > 0) {
@@ -87,7 +102,7 @@ export const queryMxStockList = async (): Promise<Stock[]> => {
     }
   }
 
-  return stocks.slice(0, 50);
+  return stocks;
 };
 
 /** 从 mx-stocks-screener 查询选股结果并转换为 Stock[] */

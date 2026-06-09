@@ -41,31 +41,39 @@ const StockInfoSection: React.FC<StockInfoSectionProps> = ({
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const data = await getStockList();
 
-      // mx 主数据源时追加 mx 数据
-      if (isMxPrimary) {
-        try {
-          const mxStocks = await queryMxStockList();
-          if (mxStocks.length > 0) {
-            // mx 数据优先，合并到现有数据前
-            const existingSymbols = new Set(data.map((s) => s.symbol));
-            const newMxStocks = mxStocks.filter((s) => !existingSymbols.has(s.symbol));
-            const merged = [...mxStocks.slice(0, 10), ...data, ...newMxStocks].slice(0, 100);
-            setStocks(merged);
-            setDataFreshness({ source: 'mx', updatedAt: new Date().toISOString(), detail: '妙想 mx + EastMoney 混合' });
-            if (merged.length > 0) setSelectedStock(merged[0]);
-            setLoading(false);
-            return;
-          }
-        } catch (e) {
-          console.warn('mx stock list query failed, falling back to EastMoney', e);
-        }
+      // 并行加载：EastMoney + mx
+      const [baseData, mxStocks] = await Promise.all([
+        getStockList().catch(() => [] as Stock[]),
+        queryMxStockList().catch(() => [] as Stock[]),
+      ]);
+
+      if (isMxPrimary && mxStocks.length > 0) {
+        // mx 为主：mx 数据在前，EastMoney 补充
+        const existingSymbols = new Set(mxStocks.map((s) => s.symbol));
+        const extraFromBase = baseData.filter((s) => !existingSymbols.has(s.symbol));
+        const merged = [...mxStocks, ...extraFromBase];
+        setStocks(merged);
+        setDataFreshness({ source: 'mx', updatedAt: new Date().toISOString(), detail: `妙想 mx (${mxStocks.length}只) + EastMoney` });
+        if (merged.length > 0) setSelectedStock(merged[0]);
+      } else if (mxStocks.length > 0 && baseData.length === 0) {
+        // EastMoney 失败时 mx 兜底
+        setStocks(mxStocks);
+        setDataFreshness({ source: 'mx', updatedAt: new Date().toISOString(), detail: '妙想 mx 实时' });
+        if (mxStocks.length > 0) setSelectedStock(mxStocks[0]);
+      } else if (baseData.length > 0) {
+        // 默认：EastMoney 为主，mx 补充
+        const existingSymbols = new Set(baseData.map((s) => s.symbol));
+        const freshMx = mxStocks.filter((s) => !existingSymbols.has(s.symbol));
+        const merged = [...baseData, ...freshMx];
+        setStocks(merged);
+        setDataFreshness(getStockListDataFreshness());
+        if (merged.length > 0) setSelectedStock(merged[0]);
+      } else {
+        setStocks([]);
+        setDataFreshness(null);
       }
 
-      setStocks(data);
-      setDataFreshness(getStockListDataFreshness());
-      if (data.length > 0) setSelectedStock(data[0]);
       setLoading(false);
     };
     fetchData();
