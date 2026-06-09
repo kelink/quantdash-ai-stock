@@ -1,6 +1,7 @@
 
 import React, { Suspense, lazy, useState, useEffect } from 'react';
 import Header from './components/Header';
+import { AuthProvider } from './components/auth/AuthContext';
 import { LayoutDashboard, Sliders, Radio, Activity, TrendingUp, Layers, Bot, Github, Sparkles } from 'lucide-react';
 import SyncStatusCard from './components/SyncStatusCard';
 import DataSourcePolicyCard from './components/DataSourcePolicyCard';
@@ -145,6 +146,7 @@ function App() {
   );
 
   return (
+    <AuthProvider>
     <div className={`h-screen font-sans selection:bg-cyan-500/30 overflow-hidden flex flex-col transition-colors duration-500
       ${isDark 
         ? 'bg-slate-950 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-gray-950 to-black text-gray-200' 
@@ -194,7 +196,12 @@ function App() {
               </button>
             ))}
           </div>
-          
+
+          {/* DataSource 策略 — 放在菜单下方可见位置 */}
+          <div className={`px-3 pb-3 border-b ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
+            <DataSourcePolicyCard isDark={isDark} />
+          </div>
+
           <div className={`mt-auto p-6 border-t ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
              <SyncStatusCard
                isDark={isDark}
@@ -210,7 +217,6 @@ function App() {
                  setRuntimeStatus(nextRuntime);
                }}
              />
-             <DataSourcePolicyCard isDark={isDark} />
              <div className={`p-4 rounded-xl border ${isDark ? 'bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-white/5' : 'bg-gradient-to-br from-indigo-50 to-blue-50 border-blue-100'}`}>
                 <h4 className={`text-sm font-bold mb-1 ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Pro 版本</h4>
                 <p className="text-xs text-slate-500 dark:text-gray-500 mb-3">解锁 AI 深度投研功能</p>
@@ -258,6 +264,7 @@ function App() {
         </main>
       </div>
     </div>
+    </AuthProvider>
   );
 }
 
