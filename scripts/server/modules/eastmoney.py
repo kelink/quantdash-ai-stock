@@ -8,6 +8,20 @@ from server.modules.eastmoney_policy import get_eastmoney_provider_policy, save_
 from server.modules.eastmoney_refresh import get_eastmoney_refresh_state, warm_eastmoney_datasets
 from server.modules.eastmoney_secondary import get_secondary_provider_health, probe_secondary_provider
 
+try:
+    from server.modules.mx_datasource.mx_policy import get_mx_health as _get_mx_health
+except ImportError:  # pragma: no cover — mx_datasource 模块可能尚未创建
+    def _get_mx_health() -> dict:
+        return {
+            "available": False,
+            "installedSkills": [],
+            "lastCheckedAt": None,
+            "lastSuccessAt": None,
+            "lastError": "mx_datasource 模块未加载",
+            "lastLatencyMs": None,
+            "probeResults": {},
+        }
+
 
 ROUTER = APIRouter(tags=["eastmoney"])
 
@@ -35,6 +49,7 @@ async def eastmoney_status(_current_user=Depends(require_user)):
         "providerPolicy": get_eastmoney_provider_policy(),
         "refresh": get_eastmoney_refresh_state(),
         "secondaryHealth": get_secondary_provider_health(),
+        "mxHealth": _get_mx_health(),
     }
 
 
