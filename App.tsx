@@ -168,7 +168,7 @@ function App() {
 
       <div className="flex-1 flex overflow-hidden relative z-10">
         {/* Sidebar */}
-        <aside className={`w-64 flex-shrink-0 border-r backdrop-blur-md flex flex-col transition-all duration-300
+        <aside className={`w-64 flex-shrink-0 border-r backdrop-blur-md flex flex-col transition-all duration-300 overflow-y-auto
           ${isDark ? 'border-white/5 bg-black/20' : 'border-slate-200 bg-white/60'}`}>
           <div className="p-4 space-y-2">
             {menuItems.map((item) => (
