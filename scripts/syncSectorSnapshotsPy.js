@@ -27,7 +27,7 @@ const runCommand = (command, args) =>
 export const syncSectorSnapshotsPy = async () => {
   const attempts = [
     { command: 'python', args: [SCRIPT_PATH] },
-    { command: 'py', args: ['-3', SCRIPT_PATH] },
+    ...(process.platform === 'win32' ? [{ command: 'py', args: ['-3', SCRIPT_PATH] }] : []),
   ];
 
   let lastError = null;

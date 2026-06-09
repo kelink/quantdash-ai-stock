@@ -29,8 +29,12 @@ export const syncKlineLibraryPy = async () => {
   try {
     await runPython('python', [PYTHON_SCRIPT]);
   } catch (error) {
-    console.warn('[kline-py-sync] python failed, trying py -3...', error.message);
-    await runPython('py', ['-3', PYTHON_SCRIPT]);
+    if (process.platform === 'win32') {
+      console.warn('[kline-py-sync] python failed, trying py -3...', error.message);
+      await runPython('py', ['-3', PYTHON_SCRIPT]);
+    } else {
+      throw error;
+    }
   }
 };
 

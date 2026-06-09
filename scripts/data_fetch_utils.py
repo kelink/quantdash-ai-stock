@@ -7,7 +7,14 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, Sequence, TypeVar
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
-from urllib.request import Request, urlopen
+from urllib.request import ProxyHandler, Request, build_opener, install_opener, urlopen
+
+# Bypass system proxy for EastMoney API calls — urllib has issues with
+# HTTP/2 tunnels through certain proxy implementations (e.g. clash),
+# causing RemoteDisconnected / timeout errors. These scripts run locally
+# and access public APIs, so the proxy is unnecessary.
+_opener = build_opener(ProxyHandler(proxies={}))
+install_opener(_opener)
 
 from data_paths import A_SHARE_DIR, DATA_DIR, resolve_existing_path, resolve_write_path
 
@@ -29,13 +36,13 @@ def now_millis() -> int:
     return int(time.time() * 1000)
 
 
-def fetch_json(url: str, timeout: int = 15) -> dict[str, Any]:
+def fetch_json(url: str, timeout: int = 30) -> dict[str, Any]:
     req = Request(url, headers=DEFAULT_HEADERS)
     with urlopen(req, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
-def fetch_with_fallbacks(url: str, timeout: int = 15) -> dict[str, Any]:
+def fetch_with_fallbacks(url: str, timeout: int = 30) -> dict[str, Any]:
     pipelines = [
         url,
         f"https://corsproxy.io/?{quote(url, safe='')}",
@@ -44,19 +51,29 @@ def fetch_with_fallbacks(url: str, timeout: int = 15) -> dict[str, Any]:
     last_error: Optional[Exception] = None
 
     for target in pipelines:
-        try:
-            return fetch_json(target, timeout=timeout)
-        except (
-            HTTPError,
-            URLError,
-            TimeoutError,
-            RemoteDisconnected,
-            ConnectionResetError,
-            OSError,
-            json.JSONDecodeError,
-        ) as error:
-            last_error = error
-            time.sleep(0.2)
+        for attempt in range(3):
+            try:
+                return fetch_json(target, timeout=timeout)
+            except HTTPError as error:
+                status = getattr(error, "code", 0)
+                last_error = error
+                if 500 <= status < 600 and attempt < 2:
+                    delay = (attempt + 1) * 2.0
+                    print(f"[fetch] {target[:60]}... returned HTTP {status}, retrying in {delay}s (attempt {attempt + 1}/3)", file=__import__("sys").stderr)
+                    time.sleep(delay)
+                    continue
+                break
+            except (
+                URLError,
+                TimeoutError,
+                RemoteDisconnected,
+                ConnectionResetError,
+                OSError,
+                json.JSONDecodeError,
+            ) as error:
+                last_error = error
+                time.sleep(0.2)
+                break
 
     raise RuntimeError(f"Failed to fetch {url}: {last_error}")
 

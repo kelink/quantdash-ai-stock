@@ -89,7 +89,11 @@ def fetch_sector_board_history(code: str) -> List[dict[str, Any]]:
 
 
 def collect_sector_history_rows(board_type: str) -> List[dict[str, Any]]:
-    sector_list = fetch_sector_board_list(board_type)
+    try:
+        sector_list = fetch_sector_board_list(board_type)
+    except Exception as exc:
+        print(f"[sector-py] Failed to fetch board list for {board_type}: {exc}", file=sys.stderr)
+        return []
     candidates = sector_list[:24]
     history_rows: List[dict[str, Any]] = []
     for group in chunked(candidates, 6):

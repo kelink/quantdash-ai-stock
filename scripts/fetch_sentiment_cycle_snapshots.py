@@ -104,7 +104,10 @@ def get_stock_kline(symbol: str, period: int = 101) -> List[dict[str, Any]]:
         "&fields1=f1&fields2=f51,f52,f53,f54,f55,f57"
         f"&klt={period}&fqt=1&end=20500101&lmt=200&_={now_millis()}"
     )
-    payload = fetch_with_fallbacks(url)
+    try:
+        payload = fetch_with_fallbacks(url)
+    except Exception:
+        return []
     klines = payload.get("data", {}).get("klines", [])
     if not isinstance(klines, list):
         return []
@@ -131,61 +134,67 @@ def get_stock_kline(symbol: str, period: int = 101) -> List[dict[str, Any]]:
 
 
 def get_single_day_close_change(symbol: str, date_str: str) -> Optional[float]:
-    klines = get_stock_kline(symbol, 101)
-    if not klines:
+    try:
+        klines = get_stock_kline(symbol, 101)
+        if not klines:
+            return None
+
+        target_index = -1
+        for index in range(len(klines) - 1, -1, -1):
+            if str(klines[index].get("date", "")) <= date_str:
+                target_index = index
+                break
+
+        if target_index <= 0:
+            return None
+
+        today = klines[target_index]
+        prev = klines[target_index - 1]
+        prev_close = float(prev.get("close", 0))
+        if prev_close <= 0:
+            return None
+
+        return ((float(today.get("close", 0)) - prev_close) / prev_close) * 100
+    except Exception:
         return None
-
-    target_index = -1
-    for index in range(len(klines) - 1, -1, -1):
-        if str(klines[index].get("date", "")) <= date_str:
-            target_index = index
-            break
-
-    if target_index <= 0:
-        return None
-
-    today = klines[target_index]
-    prev = klines[target_index - 1]
-    prev_close = float(prev.get("close", 0))
-    if prev_close <= 0:
-        return None
-
-    return ((float(today.get("close", 0)) - prev_close) / prev_close) * 100
 
 
 def get_single_day_performance(symbol: str, date_str: str) -> Optional[dict[str, Any]]:
-    klines = get_stock_kline(symbol, 101)
-    if not klines:
+    try:
+        klines = get_stock_kline(symbol, 101)
+        if not klines:
+            return None
+
+        target_index = -1
+        for index in range(len(klines) - 1, -1, -1):
+            if str(klines[index].get("date", "")) <= date_str:
+                target_index = index
+                break
+
+        if target_index <= 0:
+            return None
+
+        today = klines[target_index]
+        prev = klines[target_index - 1]
+        prev_close = float(prev.get("close", 0))
+        if prev_close <= 0:
+            return None
+
+        open_pct = ((float(today.get("open", 0)) - prev_close) / prev_close) * 100
+        close_pct = ((float(today.get("close", 0)) - prev_close) / prev_close) * 100
+        is_one_word = (
+            abs(float(today.get("open", 0)) - float(today.get("close", 0))) < 0.001
+            and abs(float(today.get("open", 0)) - float(today.get("high", 0))) < 0.001
+            and abs(float(today.get("open", 0)) - float(today.get("low", 0))) < 0.001
+        )
+
+        return {
+            "openPct": round(open_pct, 2),
+            "closePct": round(close_pct, 2),
+            "isOneWord": is_one_word,
+        }
+    except Exception:
         return None
-
-    target_index = -1
-    for index in range(len(klines) - 1, -1, -1):
-        if str(klines[index].get("date", "")) <= date_str:
-            target_index = index
-            break
-
-    if target_index <= 0:
-        return None
-
-    today = klines[target_index]
-    prev = klines[target_index - 1]
-    prev_close = float(prev.get("close", 0))
-    if prev_close <= 0:
-        return None
-
-    open_pct = ((float(today.get("open", 0)) - prev_close) / prev_close) * 100
-    close_pct = ((float(today.get("close", 0)) - prev_close) / prev_close) * 100
-    is_one_word = (
-        abs(float(today.get("open", 0)) - float(today.get("close", 0))) < 0.001
-        and abs(float(today.get("open", 0)) - float(today.get("high", 0))) < 0.001
-        and abs(float(today.get("open", 0)) - float(today.get("low", 0))) < 0.001
-    )
-
-    return {
-        "openPct": round(open_pct, 2),
-        "closePct": round(close_pct, 2),
-        "isOneWord": is_one_word,
-    }
 
 
 def fetch_limit_up_pool(date_str: str) -> List[dict[str, Any]]:
