@@ -9,8 +9,18 @@ from server.modules.mx_datasource.mx_policy import (
     get_mx_health,
     probe_mx_skills,
 )
+from server.modules.mx_datasource.mx_policy_writer import get_mx_policy, save_mx_policy
+from pydantic import BaseModel, ConfigDict
+
+
+class _StrictModel(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 ROUTER = APIRouter(tags=["mx-datasource"], prefix="/mx-datasource")
+
+
+class MxPolicyPayload(_StrictModel):
+    globalMode: str
 
 
 @ROUTER.get("/health")
@@ -35,9 +45,23 @@ async def mx_probe():
     return await run_blocking(probe_mx_skills)
 
 
+@ROUTER.get("/policy")
+async def mx_policy():
+    """返回 mx 全局主数据源策略。"""
+    return get_mx_policy()
+
+
+@ROUTER.put("/policy")
+async def mx_update_policy(payload: MxPolicyPayload):
+    """更新 mx 全局主数据源策略。"""
+    return save_mx_policy(payload.globalMode)
+
+
 __all__ = [
     "ROUTER",
     "mx_datasets",
     "mx_health",
+    "mx_policy",
     "mx_probe",
+    "mx_update_policy",
 ]

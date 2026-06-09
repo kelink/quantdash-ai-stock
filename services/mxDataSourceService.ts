@@ -1,4 +1,4 @@
-import type { MxDataSourceStatus, MxHealthState } from '../types';
+import type { DataSourceGlobalMode, MxDataSourceStatus, MxHealthState } from '../types';
 import { resolveScreenerApiBase } from './apiConfig';
 
 const API_BASE = resolveScreenerApiBase();
@@ -27,6 +27,29 @@ export const loadMxDatasets = async (): Promise<MxDataSourceStatus['supportedDat
 export const probeMxHealth = async (): Promise<MxHealthState> => {
   const response = await ensureOk(
     await fetch(`${API_BASE}/mx-datasource/probe`, { method: 'POST' }),
+  );
+  return response.json();
+};
+
+export interface MxPolicyResponse {
+  globalMode: DataSourceGlobalMode;
+  updatedAt: string | null;
+}
+
+export const loadMxPolicy = async (): Promise<MxPolicyResponse> => {
+  const response = await ensureOk(
+    await fetch(`${API_BASE}/mx-datasource/policy`, { method: 'GET' }),
+  );
+  return response.json();
+};
+
+export const saveMxPolicy = async (globalMode: DataSourceGlobalMode): Promise<MxPolicyResponse> => {
+  const response = await ensureOk(
+    await fetch(`${API_BASE}/mx-datasource/policy`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ globalMode }),
+    }),
   );
   return response.json();
 };

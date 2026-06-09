@@ -1,8 +1,8 @@
 {
-  "checkedAt": "2026-06-09T09:00:07.122982",
+  "checkedAt": "2026-06-09T10:53:24.031041",
   "currentBranch": "main",
-  "currentCommitSha": "63ba5e6e201d781dfe38cb34e249d8145277b6e6",
-  "currentCommitShort": "63ba5e6",
+  "currentCommitSha": "4a7a37305dd0d8415504fa89128350046fefaef5",
+  "currentCommitShort": "4a7a373",
   "currentVersion": "0.1.0",
   "defaultBranch": null,
   "error": "GitHub 仓库信息请求失败: 403",

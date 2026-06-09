@@ -1,45 +1,47 @@
 {
-  "trigger": "sync:all",
-  "startedAt": "2026-04-13T12:28:07.596Z",
-  "finishedAt": "2026-04-13T13:19:47.423Z",
-  "durationMs": 3099827,
-  "updatedAt": "2026-04-13T13:19:47.423Z",
+  "trigger": "startup-sync",
+  "startedAt": "2026-06-09T09:59:41.202Z",
+  "finishedAt": "2026-06-09T10:00:40.301Z",
+  "durationMs": 59099,
+  "updatedAt": "2026-06-09T10:00:40.301Z",
   "overallStatus": "failed",
   "counts": {
-    "completed": 1,
-    "skipped": 0,
+    "completed": 0,
+    "skipped": 1,
     "failed": 1,
     "total": 2
   },
-  "onlineTradingDate": "2026-04-10",
-  "onlineMonthDay": "04-10",
+  "onlineTradingDate": "2026-06-09",
+  "onlineMonthDay": "06-09",
   "latestSnapshots": {
-    "sentiment": "2026-04-10",
-    "performance": "04-10",
+    "sentiment": "2026-06-09",
+    "performance": "06-09",
     "emotion": "2026-04-10",
     "cycle": "03-30",
     "klineManifestCount": 32,
-    "klineManifestStamp": "2026-03-31"
+    "klineManifestStamp": "2026-06-09"
   },
   "stages": [
     {
-      "key": "market-pipeline",
-      "name": "Market Data Pipeline",
-      "status": "failed",
-      "reason": "py exited with code 1",
-      "startedAt": "2026-04-13T12:28:07.779Z",
-      "finishedAt": "2026-04-13T13:15:25.422Z",
-      "durationMs": 2837643
+      "key": "market-core",
+      "name": "Market Core Snapshot",
+      "status": "skipped",
+      "reason": "already up-to-date (2026-06-09)",
+      "startedAt": "2026-06-09T09:59:41.659Z",
+      "finishedAt": "2026-06-09T09:59:41.659Z",
+      "durationMs": 0
     },
     {
       "key": "emotion",
       "name": "Emotion Indicators",
-      "status": "completed",
-      "reason": null,
-      "startedAt": "2026-04-13T13:15:25.423Z",
-      "finishedAt": "2026-04-13T13:19:47.423Z",
-      "durationMs": 262000
+      "status": "failed",
+      "reason": "spawn py ENOENT",
+      "startedAt": "2026-06-09T09:59:41.659Z",
+      "finishedAt": "2026-06-09T10:00:40.300Z",
+      "durationMs": 58641
     }
   ],
-  "extra": {}
+  "extra": {
+    "mode": "startup"
+  }
 }

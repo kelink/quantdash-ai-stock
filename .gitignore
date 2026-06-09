@@ -63,3 +63,4 @@ data/system/screener_strategies.local.json
 *.njsproj
 *.sln
 *.sw?
+.gstack/

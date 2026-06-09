@@ -14,7 +14,7 @@ import {
   probeDataSourceHealth,
   updateDataSourcePolicy,
 } from '../services/dataSourcePolicyService';
-import { loadMxHealth, probeMxHealth } from '../services/mxDataSourceService';
+import { loadMxHealth, loadMxPolicy, probeMxHealth, saveMxPolicy } from '../services/mxDataSourceService';
 
 interface DataSourcePolicyCardProps {
   isDark: boolean;
@@ -95,6 +95,24 @@ const DataSourcePolicyCard: React.FC<DataSourcePolicyCardProps> = ({ isDark }) =
       });
     return () => { cancelled = true; };
   }, []);
+
+  // 加载 mx 全局策略（从后端持久化）
+  useEffect(() => {
+    let cancelled = false;
+    loadMxPolicy()
+      .then((p) => {
+        if (cancelled) return;
+        setGlobalMode3S(p.globalMode);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // 全局主数据源下拉框变更 → 自动保存
+  const handleGlobalModeChange = (mode: DataSourceGlobalMode) => {
+    setGlobalMode3S(mode);
+    saveMxPolicy(mode).catch(() => {});
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -245,7 +263,7 @@ const DataSourcePolicyCard: React.FC<DataSourcePolicyCardProps> = ({ isDark }) =
           <select
             id="data-source-global-mode-3s"
             value={globalMode3S}
-            onChange={(event) => setGlobalMode3S(event.target.value as DataSourceGlobalMode)}
+            onChange={(event) => handleGlobalModeChange(event.target.value as DataSourceGlobalMode)}
             className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
               isDark
                 ? 'border-white/10 bg-slate-900/80 text-gray-100 focus:border-purple-500/60'
