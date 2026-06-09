@@ -610,3 +610,41 @@ export interface ChanAnalysisResult {
   pivotZones: ChanPivotZone[];
   summary: ChanStructureSummary;
 }
+
+// --- mxDataSource 第三数据源 (Phase 1) ---
+
+export type DataSourceProvider = 'mx' | 'eastmoney' | 'mootdx' | 'local' | 'mock';
+
+export type DataSourceGlobalMode = 'prefer_mx' | 'prefer_eastmoney' | 'prefer_secondary';
+
+export interface MxHealthState {
+  available: boolean;
+  installedSkills: string[];
+  lastCheckedAt: string | null;
+  lastSuccessAt: string | null;
+  lastError: string | null;
+  lastLatencyMs: number | null;
+  probeResults: Record<string, MxProbeResult>;
+}
+
+export interface MxProbeResult {
+  checkedAt: string | null;
+  detail: string;
+  latencyMs: number | null;
+  ok: boolean;
+  skillSlug: string;
+}
+
+export interface MxDatasetInfo {
+  dataset: string;
+  label: string;
+  skillSlug: string;
+  actions: string[];
+}
+
+export interface MxDataSourceStatus {
+  available: boolean;
+  installedSkills: string[];
+  supportedDatasets: MxDatasetInfo[];
+  health: MxHealthState;
+}
